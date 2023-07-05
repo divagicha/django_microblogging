@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  postgresql:
+    container_name: postgresql
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432/tcp"
+    volumes:
+       - './postgresql-data/:/var/lib/postgresql/data'
+    environment:
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=dbpassword
+  rediscache:
+    container_name: rediscache
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
