@@ -24,6 +24,7 @@ from blogging import views
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'posts', views.PostViewSet)
+router.register(r'activity', views.PostInteractionViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),

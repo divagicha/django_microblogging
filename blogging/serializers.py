@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from blogging.enums import Interaction
-from blogging.models import Post, Followers
+from blogging.models import Post, Followers, PostInteraction
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -48,6 +48,20 @@ class PostSerializer(serializers.ModelSerializer):
     @classmethod
     def get_repost(cls, obj):
         return obj.get_interactions(activity=Interaction.repost.name).count()
+
+
+class PostInteractionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        required=True, queryset=User.objects.all()
+    )
+    post = serializers.PrimaryKeyRelatedField(
+        required=True, queryset=Post.objects.filter(is_active=True)
+    )
+    activity = serializers.ChoiceField(choices=Interaction.choices())
+
+    class Meta:
+        model = PostInteraction
+        fields = '__all__'
 
 
 class FollowUserSerializer(serializers.ModelSerializer):

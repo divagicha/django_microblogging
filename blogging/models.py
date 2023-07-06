@@ -66,10 +66,11 @@ class Post(models.Model):
             raise ValidationError(f"can't post comment on an inactive post")
 
     def save(self, *args, **kwargs):
-        if not self.parent:
-            self.slug = slugify(self.body[:45])
-        else:
-            self.slug = f"thread-{self.parent.id}-comment-{self.id}"
+        super(Post, self).save(*args, **kwargs)
+
+        if not self.slug:
+            self.slug = f"{slugify(self.body[:45])}-{self.id}" if not self.parent else \
+                f"thread-{self.parent.id}-comment-{self.id}"
 
         super(Post, self).save(*args, **kwargs)
 
@@ -100,3 +101,7 @@ class PostInteraction(models.Model):
 
         if not self.post.is_active:
             raise ValidationError(f"can't publish activity on an inactive post")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

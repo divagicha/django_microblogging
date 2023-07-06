@@ -10,9 +10,10 @@ from rest_framework.schemas import ManualSchema, AutoSchema
 from rest_framework.views import APIView
 
 from blogging.constants import TIMELINE_TTL
+from blogging.enums import Interaction
 from blogging.serializers import UserSerializer, PostSerializer, TimelineSerializer, \
-    FollowUserSerializer
-from blogging.models import Post, Followers
+    FollowUserSerializer, PostInteractionSerializer
+from blogging.models import Post, Followers, PostInteraction
 from core.redis_helper import RedisInterface
 
 
@@ -32,6 +33,73 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.filter(parent__isnull=True).order_by('-created_at')
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class PostInteractionViewSet(viewsets.ViewSet):
+    """
+    API endpoint that allows posts interactions (like / share / repost) to be created,
+    with logged-in user being the user interacting with post/comment
+    """
+    schema = AutoSchema(
+        manual_fields=[
+            coreapi.Field(
+                name="post",
+                location='form',            # possible values: path, query, body, form
+                required=True,
+                schema=coreschema.Integer(description="post/comment ID to interact with"),
+                type=int,
+                description='',
+                example='',
+            ),
+            coreapi.Field(
+                name="activity",
+                location='form',            # possible values: path, query, body, form
+                required=True,
+                schema=coreschema.Enum(description="action to be performed",
+                                       enum=Interaction.names()),
+                type=str,
+                description='',
+                example='',
+            ),
+        ]
+    )
+
+    queryset = PostInteraction.objects.all().order_by('-created_at')
+    serializer_class = PostInteractionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, format=None):
+        request_data = {
+            **request.data,
+            **{'user': request.user.id}
+        }
+
+        serializer = PostInteractionSerializer(data=request_data)
+
+        if not serializer.is_valid():
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={
+                    'status': 'failed',
+                    'message': "invalid post interaction request",
+                    'errors': serializer.errors
+                }
+            )
+
+        try:
+            serializer.save()
+            return Response(serializer.data)
+        except ValidationError as exc:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={
+                    'status': 'failed',
+                    'message': "invalid post interaction request",
+                    'errors': {
+                        'validation_errors': [str(exc)]
+                    }
+                }
+            )
 
 
 class FollowUserView(APIView):
@@ -80,14 +148,14 @@ class FollowUserView(APIView):
             try:
                 serializer.save()
                 return Response(serializer.data)
-            except ValidationError:
+            except ValidationError as exc:
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data={
                         'status': 'failed',
                         'message': "invalid follow request",
                         'errors': {
-                            'validation_errors': ["user and following user can't be same"]
+                            'validation_errors': [str(exc)]
                         }
                     }
                 )

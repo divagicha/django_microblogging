@@ -16,6 +16,10 @@ class BaseEnum(Enum, metaclass=MetaEnum):
         return [(tag.name, tag.value) for tag in cls]
 
     @classmethod
+    def names(cls):
+        return [tag.name for tag in cls]
+
+    @classmethod
     def has_name(cls, name):
         return name in cls.__members__
 
