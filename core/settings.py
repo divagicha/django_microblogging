@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'blogging',
     'coreapi',                              # Coreapi for coreapi documentation
+    'drf_yasg',                             # drf_yasg for Swagger/Redoc documentation
 ]
 
 MIDDLEWARE = [
